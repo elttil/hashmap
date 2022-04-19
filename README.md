@@ -12,7 +12,9 @@ one that can be found in hash.c. But it should be possible to use any
 other hashing algorithm should you want to as long as it uses these
 types:
 
->uint32_t hash_function(uint8_t*, size_t)
+```C
+uint32_t hash_function(uint8_t*, size_t)
+```
 
 The hashing algorithm can be changed via changing the "hash_function"
 pointer in the HashMap structure.
@@ -29,11 +31,14 @@ freed upon deletion.
 
 This can be done by changing the last value of
 
->int hashmap_add_entry(HashMap *m, char *key, void *value, void (*upon_deletion)(char *, void *));
+```C
+int hashmap_add_entry(HashMap *m, char *key, void *value, void (*upon_deletion)(char *, void *));
+```
 
 to your own function that can be called. For example:
 
 ```C
+// SPDX-License-Identifier: 0BSD
 void auto_free(char *key, void *value)
 {
   printf("key: %s is being deleted\n", key);
