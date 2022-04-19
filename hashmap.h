@@ -11,6 +11,7 @@
 typedef struct LinkedList {
   char *key;
   void *value;
+  void (*upon_deletion)(char *, void *);
   struct LinkedList *next;
 } LinkedList;
 
@@ -23,7 +24,8 @@ typedef struct HashMap {
 
 HashMap *hashmap_create(size_t size);
 void hashmap_free(HashMap *m);
-int hashmap_add_entry(HashMap *m, char *key, void *value);
+int hashmap_add_entry(HashMap *m, char *key, void *value,
+                      void (*upon_deletion)(char *, void *));
 void *hashmap_get_entry(HashMap *m, char *key);
 int hashmap_delete_entry(HashMap *m, char *key);
 #endif

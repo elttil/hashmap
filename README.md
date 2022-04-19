@@ -21,6 +21,26 @@ Important to note that the hashing function shall not be changed
 after having added entries to the hashmap as the key to linked list
 pairing will change.
 
+# Call function once a entry has been deleted.
+
+Should it be the case that the entries you put in the hashmap are for
+example allocated to the heap you may want them to be automatically
+freed upon deletion.
+
+This can be done by changing the last value of
+
+>int hashmap_add_entry(HashMap *m, char *key, void *value, void (*upon_deletion)(char *, void *));
+
+to your own function that can be called. For example:
+
+```C
+void auto_free(char *key, void *value)
+{
+  printf("key: %s is being deleted\n", key);
+  free(value);
+}
+```
+
 # Example
 
 ```C
@@ -38,9 +58,9 @@ int main(void) {
   }
 
   // Add the entries "apple", "banana", "orange" to the hashmap.
-  hashmap_add_entry(m, "apple", str);
-  hashmap_add_entry(m, "banana", str1);
-  hashmap_add_entry(m, "orange", str2);
+  hashmap_add_entry(m, "apple", str, NULL);
+  hashmap_add_entry(m, "banana", str1, NULL);
+  hashmap_add_entry(m, "orange", str2, NULL);
 
   // Print out the entries created
   printf("apple: %s\n", (char *)hashmap_get_entry(m, "apple"));

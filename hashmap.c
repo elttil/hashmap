@@ -71,7 +71,8 @@ void *get_linkedlist_value(LinkedList *list, char *key) {
   return entry->value;
 }
 
-int add_to_linkedlist(LinkedList *list, char *key, void *value) {
+int add_to_linkedlist(LinkedList *list, char *key, void *value,
+                      void (*upon_deletion)(char *, void *)) {
   for (; list->next;)
     list = list->next;
 
@@ -86,6 +87,7 @@ int add_to_linkedlist(LinkedList *list, char *key, void *value) {
   }
   entry->value = value;
   entry->next = NULL;
+  entry->upon_deletion = upon_deletion;
   return 1;
 }
 
@@ -93,7 +95,8 @@ uint32_t find_index(HashMap *m, char *key) {
   return limit_hash(m, m->hash_function((uint8_t *)key, strlen(key) - 3));
 }
 
-int hashmap_add_entry(HashMap *m, char *key, void *value) {
+int hashmap_add_entry(HashMap *m, char *key, void *value,
+                      void (*upon_deletion)(char *, void *)) {
   uint32_t index = find_index(m, key);
   if (!m->entries[index]) {
     // Create the linkedlist
@@ -104,9 +107,10 @@ int hashmap_add_entry(HashMap *m, char *key, void *value) {
     entry->key = copy_c_string(key);
     entry->value = value;
     entry->next = NULL;
+    entry->upon_deletion = upon_deletion;
     goto suc;
   }
-  if (!add_to_linkedlist(m->entries[index], key, value))
+  if (!add_to_linkedlist(m->entries[index], key, value, upon_deletion))
     return 0;
 suc:
   m->num_entries++;
@@ -131,6 +135,9 @@ int hashmap_delete_entry(HashMap *m, char *key) {
   if (!prev)
     prev = &m->entries[find_index(m, key)];
 
+  if (entry->upon_deletion)
+    entry->upon_deletion(entry->key, entry->value);
+
   LinkedList *next = entry->next;
   free(entry->key);
   free(entry);
@@ -152,6 +159,8 @@ void hashmap_free(HashMap *m) {
       continue;
     LinkedList *list = m->entries[i];
     for (; list;) {
+      if (list->upon_deletion)
+        list->upon_deletion(list->key, list->value);
       LinkedList *old = list;
       list = list->next;
       free(old->key);
