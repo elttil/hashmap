@@ -46,6 +46,14 @@ void auto_free(char *key, void *value)
 }
 ```
 
+# hashmap_add_entry()
+
+This function adds a entry to the hashmap. The "key" passed to the
+hashmap will be by default allocated before adding it. This will not be
+done with the "value" argument. If this allocation is undesirable you
+can use `hashmap_add_entry_no_alloc_key()` that does not allocated the
+"key" passed to it.
+
 # Example
 
 ```C
@@ -63,6 +71,8 @@ int main(void) {
   }
 
   // Add the entries "apple", "banana", "orange" to the hashmap.
+  // The "key" value passed to hashmap_add_entry will be automatically
+  // allocated.
   hashmap_add_entry(m, "apple", str, NULL);
   hashmap_add_entry(m, "banana", str1, NULL);
   hashmap_add_entry(m, "orange", str2, NULL);

@@ -94,9 +94,14 @@ int add_to_linkedlist(LinkedList *list, char *key, void *value,
 uint32_t find_index(HashMap *m, char *key) {
   return limit_hash(m, m->hash_function((uint8_t *)key, strlen(key) - 3));
 }
-
 int hashmap_add_entry(HashMap *m, char *key, void *value,
                       void (*upon_deletion)(char *, void *)) {
+  char *allocated_key = copy_c_string(key);
+  return hashmap_add_entry_no_alloc_key(m, allocated_key, value, upon_deletion);
+}
+
+int hashmap_add_entry_no_alloc_key(HashMap *m, char *key, void *value,
+                                   void (*upon_deletion)(char *, void *)) {
   uint32_t index = find_index(m, key);
   if (!m->entries[index]) {
     // Create the linkedlist
@@ -104,7 +109,7 @@ int hashmap_add_entry(HashMap *m, char *key, void *value,
     if (!entry)
       return 0;
     m->entries[index] = entry;
-    entry->key = copy_c_string(key);
+    entry->key = key;
     entry->value = value;
     entry->next = NULL;
     entry->upon_deletion = upon_deletion;
