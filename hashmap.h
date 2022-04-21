@@ -10,6 +10,7 @@
 
 typedef struct LinkedList {
   char *key;
+  int key_allocated;
   void *value;
   void (*upon_deletion)(char *, void *);
   struct LinkedList *next;
@@ -28,19 +29,11 @@ void hashmap_free(HashMap *m);
 // hashmap_add_entry()
 // -------------------
 // This function adds a entry to the hashmap. The "key" passed to the
-// hashmap will be by default allocated before adding it. This will not be
-// done with the "value" argument. If this allocation is undesirable you
-// can use `hashmap_add_entry_no_alloc_key()` that does not allocated the
-// "key" passed to it.
+// hashmap will be allocated by default unless (do_not_allocate_key) is
+// set to 1.
 int hashmap_add_entry(HashMap *m, char *key, void *value,
-                      void (*upon_deletion)(char *, void *));
-
-// hashmap_add_entry_no_alloc_key()
-// --------------------------------
-// Equivalent to hashmap_add_entry() except that the "key" argument does
-// not get allocated to the heap.
-int hashmap_add_entry_no_alloc_key(HashMap *m, char *key, void *value,
-                                   void (*upon_deletion)(char *, void *));
+                      void (*upon_deletion)(char *, void *),
+                      int do_not_allocate_key);
 void *hashmap_get_entry(HashMap *m, char *key);
 int hashmap_delete_entry(HashMap *m, char *key);
 #endif

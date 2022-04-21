@@ -46,6 +46,12 @@ char *copy_c_string(const char *str) {
 
 uint32_t limit_hash(HashMap *m, uint32_t hash) { return hash % m->size; }
 
+void free_linkedlist_entry(LinkedList *entry) {
+  if (entry->key_allocated)
+    free(entry->key);
+  free(entry);
+}
+
 LinkedList *get_linkedlist_entry(LinkedList *list, char *key,
                                  LinkedList **prev) {
   if (prev)
@@ -94,14 +100,10 @@ int add_to_linkedlist(LinkedList *list, char *key, void *value,
 uint32_t find_index(HashMap *m, char *key) {
   return limit_hash(m, m->hash_function((uint8_t *)key, strlen(key) - 3));
 }
-int hashmap_add_entry(HashMap *m, char *key, void *value,
-                      void (*upon_deletion)(char *, void *)) {
-  char *allocated_key = copy_c_string(key);
-  return hashmap_add_entry_no_alloc_key(m, allocated_key, value, upon_deletion);
-}
 
-int hashmap_add_entry_no_alloc_key(HashMap *m, char *key, void *value,
-                                   void (*upon_deletion)(char *, void *)) {
+int hashmap_add_entry(HashMap *m, char *key, void *value,
+                      void (*upon_deletion)(char *, void *),
+                      int do_not_allocate_key) {
   uint32_t index = find_index(m, key);
   if (!m->entries[index]) {
     // Create the linkedlist
@@ -109,7 +111,9 @@ int hashmap_add_entry_no_alloc_key(HashMap *m, char *key, void *value,
     if (!entry)
       return 0;
     m->entries[index] = entry;
-    entry->key = key;
+    entry->key_allocated = !do_not_allocate_key;
+    if (!do_not_allocate_key)
+      entry->key = copy_c_string(key);
     entry->value = value;
     entry->next = NULL;
     entry->upon_deletion = upon_deletion;
@@ -144,8 +148,7 @@ int hashmap_delete_entry(HashMap *m, char *key) {
     entry->upon_deletion(entry->key, entry->value);
 
   LinkedList *next = entry->next;
-  free(entry->key);
-  free(entry);
+  free_linkedlist_entry(entry);
   if (*prev != entry)
     (*prev)->next = next;
   else
@@ -168,8 +171,7 @@ void hashmap_free(HashMap *m) {
         list->upon_deletion(list->key, list->value);
       LinkedList *old = list;
       list = list->next;
-      free(old->key);
-      free(old);
+      free_linkedlist_entry(old);
     }
   }
   free(m->entries);
