@@ -77,26 +77,6 @@ void *get_linkedlist_value(LinkedList *list, char *key) {
   return entry->value;
 }
 
-int add_to_linkedlist(LinkedList *list, char *key, void *value,
-                      void (*upon_deletion)(char *, void *)) {
-  for (; list->next;)
-    list = list->next;
-
-  list->next = malloc(sizeof(LinkedList));
-  if (!list->next)
-    return 0;
-  LinkedList *entry = list->next;
-  entry->key = copy_c_string(key);
-  if (!entry->key) {
-    free(entry);
-    return 0;
-  }
-  entry->value = value;
-  entry->next = NULL;
-  entry->upon_deletion = upon_deletion;
-  return 1;
-}
-
 uint32_t find_index(HashMap *m, char *key) {
   return limit_hash(m, m->hash_function((uint8_t *)key, strlen(key) - 3));
 }
@@ -104,24 +84,29 @@ uint32_t find_index(HashMap *m, char *key) {
 int hashmap_add_entry(HashMap *m, char *key, void *value,
                       void (*upon_deletion)(char *, void *),
                       int do_not_allocate_key) {
-  uint32_t index = find_index(m, key);
-  if (!m->entries[index]) {
-    // Create the linkedlist
-    LinkedList *entry = malloc(sizeof(LinkedList));
-    if (!entry)
-      return 0;
-    m->entries[index] = entry;
-    entry->key_allocated = !do_not_allocate_key;
-    if (!do_not_allocate_key)
-      entry->key = copy_c_string(key);
-    entry->value = value;
-    entry->next = NULL;
-    entry->upon_deletion = upon_deletion;
-    goto suc;
-  }
-  if (!add_to_linkedlist(m->entries[index], key, value, upon_deletion))
+  // Create the entry
+  LinkedList *entry = malloc(sizeof(LinkedList));
+  if (!entry)
     return 0;
-suc:
+
+  entry->key_allocated = !do_not_allocate_key;
+  if (do_not_allocate_key) {
+    entry->key = key;
+  } else {
+    if (!(entry->key = copy_c_string(key)))
+      return 0;
+  }
+  entry->value = value;
+  entry->next = NULL;
+  entry->upon_deletion = upon_deletion;
+
+  // Add the new entry to the list.
+  uint32_t index = find_index(m, key);
+  LinkedList **list_pointer = &m->entries[index];
+  for (; *list_pointer;)
+    list_pointer = &(*list_pointer)->next;
+
+  *list_pointer = entry;
   m->num_entries++;
   return 1;
 }
