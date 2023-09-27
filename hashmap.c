@@ -27,11 +27,33 @@
  * pairing will change.
  */
 #include "hashmap.h"
-#include "hash.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define CONSTANT 0x031b5515
+
+uint32_t mix(uint32_t x) {
+  x ^= CONSTANT;
+  x ^= (x << 13);
+  x ^= (x >> 7);
+  x ^= (x << 17);
+  return x;
+}
+
+uint32_t hash(uint8_t *data, size_t len) {
+  uint32_t hash = 0;
+  for (; len;) {
+    uint32_t value = 0;
+    uint8_t read_len = (sizeof(uint32_t) < len) ? sizeof(uint32_t) : len;
+    memcpy(&value, data, read_len);
+    hash ^= mix(value);
+    data += read_len;
+    len -= read_len;
+  }
+  return hash;
+}
 
 char *copy_c_string(const char *str) {
   char *ret_string;
