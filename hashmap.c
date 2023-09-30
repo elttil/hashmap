@@ -100,7 +100,7 @@ void *get_linkedlist_value(LinkedList *list, char *key) {
 }
 
 uint32_t find_index(HashMap *m, char *key) {
-  return limit_hash(m, m->hash_function((uint8_t *)key, strlen(key) - 3));
+  return limit_hash(m, m->hash_function((uint8_t *)key, strlen(key)));
 }
 
 int hashmap_add_entry(HashMap *m, char *key, void *value,
