@@ -42,7 +42,7 @@ uint32_t mix(uint32_t x) {
   return x;
 }
 
-uint32_t hash(uint8_t *data, size_t len) {
+uint32_t hash(const uint8_t *data, size_t len) {
   uint32_t hash = 0;
   for (; len;) {
     uint32_t value = 0;
@@ -69,18 +69,22 @@ char *copy_c_string(const char *str) {
 uint32_t limit_hash(HashMap *m, uint32_t hash) { return hash % m->size; }
 
 void free_linkedlist_entry(LinkedList *entry) {
-  if (entry->key_allocated)
-    free(entry->key);
+  if (entry->key_allocated) {
+    // If the key is allocated by the hashmap library then it owns the
+    // key and can safley discard the const qualifier and override its
+    // contents
+    free((char *)entry->key);
+  }
   free(entry);
 }
 
-LinkedList *get_linkedlist_entry(LinkedList *list, char *key,
+LinkedList *get_linkedlist_entry(LinkedList *list, const char *key,
                                  LinkedList **prev) {
   if (prev)
     *prev = NULL;
   for (; list; list = list->next) {
-    char *str1 = key;
-    char *str2 = list->key;
+    const char *str1 = key;
+    const char *str2 = list->key;
     for (; *str1 && *str2; str1++, str2++)
       if (*str1 != *str2)
         break;
@@ -92,19 +96,19 @@ LinkedList *get_linkedlist_entry(LinkedList *list, char *key,
   return NULL;
 }
 
-void *get_linkedlist_value(LinkedList *list, char *key) {
+void *get_linkedlist_value(LinkedList *list, const char *key) {
   LinkedList *entry = get_linkedlist_entry(list, key, NULL);
   if (!entry)
     return NULL;
   return entry->value;
 }
 
-uint32_t find_index(HashMap *m, char *key) {
+uint32_t find_index(HashMap *m, const char *key) {
   return limit_hash(m, m->hash_function((uint8_t *)key, strlen(key)));
 }
 
-int hashmap_add_entry(HashMap *m, char *key, void *value,
-                      void (*upon_deletion)(char *, void *),
+int hashmap_add_entry(HashMap *m, const char *key, void *value,
+                      void (*upon_deletion)(const char *, void *),
                       int do_not_allocate_key) {
   // Create the entry
   LinkedList *entry = malloc(sizeof(LinkedList));
@@ -133,14 +137,14 @@ int hashmap_add_entry(HashMap *m, char *key, void *value,
   return 1;
 }
 
-void *hashmap_get_entry(HashMap *m, char *key) {
+void *hashmap_get_entry(HashMap *m, const char *key) {
   uint32_t index = find_index(m, key);
   if (!m->entries[index])
     return NULL;
   return get_linkedlist_value(m->entries[index], key);
 }
 
-int hashmap_delete_entry(HashMap *m, char *key) {
+int hashmap_delete_entry(HashMap *m, const char *key) {
   LinkedList *list = m->entries[find_index(m, key)];
   if (!list)
     return 0;
